@@ -4,6 +4,7 @@
 from fastapi import FastAPI, UploadFile, File, BackgroundTasks, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
+from contextlib import asynccontextmanager
 from typing import List
 from datetime import datetime
 import os
@@ -15,12 +16,38 @@ import io
 
 from docxtpl import DocxTemplate
 from PIL import Image
-import google.generativeai as genai
+
+# Google GenAI SDK mới (2026)
+from google import genai
+from google.genai import types
 
 # =============================
-# CONFIG
+# LIFESPAN - Khởi tạo model 1 lần
 # =============================
-app = FastAPI(title="VietinBank eKYC Online", version="2.0")
+client = None
+model = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global client, model
+    print("🔄 Đang khởi tạo Google GenAI Client và Model... (chỉ chạy 1 lần)")
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        print("⚠️  GEMINI_API_KEY chưa được thiết lập!")
+    else:
+        client = genai.Client(api_key=api_key)
+        model = client.models.get("gemini-3.1-flash-lite-preview")   # Model nhanh + rẻ hiện tại
+
+    print("✅ Google GenAI Model đã sẵn sàng!")
+    yield
+    print("🛑 Application shutting down...")
+
+
+# =============================
+# FASTAPI APP
+# =============================
+app = FastAPI(title="VietinBank eKYC Online", version="2.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,21 +57,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Gemini API
-api_key_gemini = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=api_key_gemini)
-
 # Mail config
 conf = ConnectionConfig(
     MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
-    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"), # Tuyệt đối không dán mã 16 ký tự vào đây
+    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
     MAIL_FROM=os.getenv("MAIL_FROM"),
     MAIL_PORT=int(os.getenv("MAIL_PORT", 587)),
     MAIL_SERVER=os.getenv("MAIL_SERVER"),
     MAIL_STARTTLS=True,
     MAIL_SSL_TLS=False,
     USE_CREDENTIALS=True,
-    VALIDATE_CERTS=False
+    VALIDATE_CERTS=False,
 )
 
 # =============================
@@ -98,10 +121,8 @@ async def send_confirmation_email(data: dict, uploaded_files: list):
             folder_path = os.path.dirname(word_file)
             for f in os.listdir(folder_path):
                 full_path = os.path.join(folder_path, f)
-
                 if full_path == zip_path:
                     continue
-
                 if f.lower().endswith((".jpg", ".jpeg", ".png")):
                     zipf.write(full_path, f)
 
@@ -125,7 +146,7 @@ async def send_confirmation_email(data: dict, uploaded_files: list):
 # =============================
 # CLEANUP
 # =============================
-def cleanup_files(zip_path):
+def cleanup_files(zip_path: str):
     try:
         folder = os.path.dirname(zip_path)
         if os.path.exists(folder):
@@ -134,31 +155,32 @@ def cleanup_files(zip_path):
         print("Lỗi xoá file:", e)
 
 # =============================
-# ROOT
+# ROUTES
 # =============================
 @app.get("/")
 async def root():
-    return {"message": "API running"}
+    return {"message": "API running - VietinBank eKYC v2.0"}
 
 # =============================
-# EXTRACT GPKD
+# EXTRACT GPKD (ĐÃ TỐI ƯU)
 # =============================
 @app.post("/extract-gpkd")
 async def extract_gpkd(file: UploadFile = File(...)):
+    if model is None:
+        return {"success": False, "error": "Model Gemini chưa được khởi tạo. Vui lòng kiểm tra GEMINI_API_KEY."}
+
     try:
+        # Đọc và tối ưu ảnh mạnh hơn
         image_data = await file.read()
         image = Image.open(io.BytesIO(image_data))
-        image.thumbnail((1600, 1600))
+        image.thumbnail((1024, 1024))   # Giảm kích thước để nhanh hơn
 
         buffer = io.BytesIO()
-        image.save(buffer, format="JPEG", quality=80)
+        image.save(buffer, format="JPEG", quality=75)
         buffer.seek(0)
-        img_final = Image.open(buffer)
-
-        model = genai.GenerativeModel("models/gemini-3.1-flash-lite-preview")
 
         prompt = """
-        Return JSON only:
+        Return JSON only, no explanation:
         {
             "business_name": "",
             "business_code": "",
@@ -177,11 +199,20 @@ async def extract_gpkd(file: UploadFile = File(...)):
         }
         """
 
-        response = model.generate_content([prompt, img_final])
+        # Gọi model mới (google-genai)
+        response = client.models.generate_content(
+            model=model,
+            contents=[prompt, types.Part.from_bytes(data=buffer.getvalue(), mime_type="image/jpeg")],
+            config=types.GenerateContentConfig(
+                temperature=0.1,
+                max_output_tokens=1200,
+                response_mime_type="application/json"
+            )
+        )
 
         text = response.text.strip()
         if text.startswith("```"):
-            text = text.replace("```json", "").replace("```", "")
+            text = text.replace("```json", "").replace("```", "").strip()
 
         data = json.loads(text)
 

@@ -1,13 +1,8 @@
 fastapi
 uvicorn[standard]
 python-multipart
-aiofiles
-pydantic
-pydantic-settings
-email-validator
-fastapi-mail
-google-generativeai
-python-dotenv
+pillow
 docxtpl
-python-docx
-Pillow
+aiofiles
+fastapi-mail
+google-genai
