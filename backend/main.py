@@ -164,24 +164,42 @@ async def extract_gpkd(file: UploadFile = File(...)):
         return {"success": False, "error": "Gemini Client chưa được khởi tạo."}
 
     try:
+        # Đọc ảnh
         image_data = await file.read()
         image = Image.open(io.BytesIO(image_data))
-        
-        # Giảm mạnh kích thước để nhanh hơn trên mobile
-        image.thumbnail((640, 640))   # ← Giảm từ 1024 xuống 640
 
+        # GIẢM MẠNH KÍCH THƯỚC + CHẤT LƯỢNG để nhanh hơn
+        image.thumbnail((512, 512))           # Giảm xuống 512px
         buffer = io.BytesIO()
-        image.save(buffer, format="JPEG", quality=65, optimize=True)   # Quality thấp hơn + optimize
+        image.save(buffer, format="JPEG", quality=55, optimize=True)   # Quality thấp + optimize
         buffer.seek(0)
 
-        prompt = """Return JSON only, no explanation: { ... }"""  # giữ nguyên prompt của bạn
+        prompt = """
+        Return JSON only, no explanation:
+        {
+            "business_name": "",
+            "business_code": "",
+            "issued_date": "",
+            "issued_place": "",
+            "business_address": "",
+            "phone": "",
+            "capital": "",
+            "owner_name": "",
+            "dob": "",
+            "email": "",
+            "cccd": "",
+            "cccd_issued_date": "",
+            "cccd_issued_place": "",
+            "permanent_address": ""
+        }
+        """
 
         response = client.models.generate_content(
-            model="gemini-3.1-flash-lite-preview",
+            model="gemini-2.0-flash-exp",
             contents=[prompt, types.Part.from_bytes(data=buffer.getvalue(), mime_type="image/jpeg")],
             config=types.GenerateContentConfig(
                 temperature=0.1,
-                max_output_tokens=1000,
+                max_output_tokens=800,
                 response_mime_type="application/json"
             )
         )
