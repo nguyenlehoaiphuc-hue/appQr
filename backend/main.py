@@ -31,15 +31,16 @@ app.add_middleware(
 )
 
 # Gemini API
-genai.configure(api_key="AIzaSyDgPhSSa_4ezXk71t-mOaZZ0ooC-2EFK4Y")
+api_key_gemini = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=api_key_gemini)
 
 # Mail config
 conf = ConnectionConfig(
-    MAIL_USERNAME="nguyenlehoaiphuc@gmail.com",
-    MAIL_PASSWORD="qfrldnzdabripocp",
-    MAIL_FROM="nguyenlehoaiphuc@gmail.com",
-    MAIL_PORT=587,
-    MAIL_SERVER="smtp.gmail.com",
+    MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
+    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"), # Tuyệt đối không dán mã 16 ký tự vào đây
+    MAIL_FROM=os.getenv("MAIL_FROM"),
+    MAIL_PORT=int(os.getenv("MAIL_PORT", 587)),
+    MAIL_SERVER=os.getenv("MAIL_SERVER"),
     MAIL_STARTTLS=True,
     MAIL_SSL_TLS=False,
     USE_CREDENTIALS=True,
