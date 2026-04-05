@@ -30,9 +30,27 @@ function fillData(data) {
     }
   });
 }
-
 // =============================
-// EXTRACT GPKD - TỐI ƯU CHO MOBILE (Timeout dài hơn)
+// PREVIEW ẢNH GPKD
+// =============================
+document.getElementById("gpkd").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+  const previewContainer = document.getElementById("previewContainer");
+  const previewImg = document.getElementById("gpkdPreview");
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      previewImg.src = event.target.result;
+      previewContainer.classList.remove("hidden");
+    };
+    reader.readAsDataURL(file);
+  } else {
+    previewContainer.classList.add("hidden");
+  }
+});
+// =============================
+// EXTRACT GPKD - TỐI ƯU CHO MOBILE (Timeout 120 giây)
 // =============================
 document.addEventListener("DOMContentLoaded", () => {
   const extractBtn = document.getElementById("extractBtn");
@@ -50,11 +68,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (file.size > 8 * 1024 * 1024) {
-      showNotification("Ảnh quá lớn (>8MB). Vui lòng chọn ảnh nhỏ hơn!", "error");
+      showNotification("Ảnh quá lớn (>8MB). Vui lòng chụp ảnh rõ nét hơn hoặc nén ảnh!", "error");
       return;
     }
 
-    extractBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý... (có thể mất 15-40 giây)`;
+    // Hiển thị trạng thái đang xử lý
+    extractBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang trích xuất... (có thể mất 20-60 giây)`;
     extractBtn.disabled = true;
 
     const formData = new FormData();
@@ -62,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 90000); // Tăng lên 90 giây
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 giây = 2 phút
 
       const response = await fetch(API_URL, {
         method: "POST",
@@ -73,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`Server trả về lỗi ${response.status}`);
+        throw new Error(`Server lỗi ${response.status}`);
       }
 
       const result = await response.json();
@@ -82,18 +101,18 @@ document.addEventListener("DOMContentLoaded", () => {
         fillData(result.data);
         showNotification("✅ Trích xuất thông tin thành công!", "success");
       } else {
-        throw new Error(result.error || "Không trích xuất được dữ liệu");
+        throw new Error(result.error || "Trích xuất thất bại");
       }
 
     } catch (error) {
       console.error("Extract GPKD error:", error);
 
       if (error.name === "AbortError") {
-        showNotification("⏰ Thời gian xử lý quá lâu. Server đang bận hoặc mạng chậm. Vui lòng thử lại!", "error");
+        showNotification("⏰ Xử lý quá lâu (hơn 2 phút). Server có thể đang bận hoặc ảnh khó nhận diện. Vui lòng thử lại với ảnh rõ nét hơn!", "error");
       } else if (error.message.includes("Failed to fetch")) {
-        showNotification("❌ Không kết nối được với server. Kiểm tra kết nối internet!", "error");
+        showNotification("❌ Mất kết nối. Kiểm tra WiFi/4G và thử lại!", "error");
       } else {
-        showNotification("❌ Lỗi: " + (error.message || "Không xác định"), "error");
+        showNotification("❌ Lỗi: " + (error.message || "Không xác định được"), "error");
       }
     } finally {
       extractBtn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Trích xuất thông tin từ GPKD`;
@@ -162,24 +181,6 @@ async function submitProfile() {
     submitBtn.disabled = false;
   }
 }
-// =============================
-// PREVIEW ẢNH GPKD
-// =============================
-document.getElementById("gpkd").addEventListener("change", function(e) {
-  const file = e.target.files[0];
-  const previewContainer = document.getElementById("previewContainer");
-  const previewImg = document.getElementById("gpkdPreview");
 
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(event) {
-      previewImg.src = event.target.result;
-      previewContainer.classList.remove("hidden");
-    };
-    reader.readAsDataURL(file);
-  } else {
-    previewContainer.classList.add("hidden");
-  }
-});
 // Bind submit button
 document.getElementById("submitBtn")?.addEventListener("click", submitProfile);

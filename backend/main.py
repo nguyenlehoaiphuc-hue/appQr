@@ -161,49 +161,27 @@ async def root():
 @app.post("/extract-gpkd")
 async def extract_gpkd(file: UploadFile = File(...)):
     if client is None:
-        return {"success": False, "error": "Gemini Client chưa được khởi tạo. Kiểm tra GEMINI_API_KEY."}
+        return {"success": False, "error": "Gemini Client chưa được khởi tạo."}
 
     try:
         image_data = await file.read()
         image = Image.open(io.BytesIO(image_data))
-        image.thumbnail((1024, 1024))
+        
+        # Giảm mạnh kích thước để nhanh hơn trên mobile
+        image.thumbnail((640, 640))   # ← Giảm từ 1024 xuống 640
 
         buffer = io.BytesIO()
-        image.save(buffer, format="JPEG", quality=75)
+        image.save(buffer, format="JPEG", quality=65, optimize=True)   # Quality thấp hơn + optimize
         buffer.seek(0)
 
-        prompt = """
-        Return JSON only, no explanation:
-        {
-            "business_name": "",
-            "business_code": "",
-            "issued_date": "",
-            "issued_place": "",
-            "business_address": "",
-            "phone": "",
-            "capital": "",
-            "owner_name": "",
-            "dob": "",
-            "email": "",
-            "cccd": "",
-            "cccd_issued_date": "",
-            "cccd_issued_place": "",
-            "permanent_address": ""
-        }
-        """
+        prompt = """Return JSON only, no explanation: { ... }"""  # giữ nguyên prompt của bạn
 
         response = client.models.generate_content(
-            model="gemini-3.1-flash-lite-preview",           # ← Sửa ở đây
-            contents=[
-                prompt,
-                types.Part.from_bytes(
-                    data=buffer.getvalue(),
-                    mime_type="image/jpeg"
-                )
-            ],
+            model="gemini-3.1-flash-lite-preview",
+            contents=[prompt, types.Part.from_bytes(data=buffer.getvalue(), mime_type="image/jpeg")],
             config=types.GenerateContentConfig(
                 temperature=0.1,
-                max_output_tokens=1200,
+                max_output_tokens=1000,
                 response_mime_type="application/json"
             )
         )
