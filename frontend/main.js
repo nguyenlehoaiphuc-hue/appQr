@@ -2,7 +2,7 @@
 // CONFIG
 // =============================
 const BASE_URL = "https://appqr-sn45.onrender.com";
-const API_URL = `${BASE_URL}/generate-qr`;
+const API_URL = `${BASE_URL}/extract-gpkd`;
 const SUBMIT_URL = `${BASE_URL}/submit-form`;
 
 // =============================
