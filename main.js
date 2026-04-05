@@ -1,8 +1,30 @@
+// Hàm nén ảnh để cứu RAM cho Render
+async function compressImage(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1200; // Giảm độ phân giải xuống mức đủ đọc chữ
+        let scale = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scale;
+        
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        canvas.toBlob((blob) => {
+          resolve(new File([blob], file.name, { type: "image/jpeg" }));
+        }, "image/jpeg", 0.7); // Nén chất lượng xuống 70%
+      };
+    };
+  });
+}
 // =============================
 // CONFIG
-// =============================
-// =============================
-// CONFIG - BASE URL (Khuyến nghị dùng)
 // =============================
 const BASE_URL = "https://appqr-sn45.onrender.com";   
 const API_URL = `${BASE_URL}/extract-gpkd`;
@@ -63,40 +85,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
   extractBtn.addEventListener("click", async (e) => {
     e.preventDefault();
-
-    const file = fileInput.files[0];
-    if (!file) {
-      showNotification("Vui lòng chọn ảnh Giấy phép kinh doanh!", "error");
-      return;
+    const originalFile = fileInput.files[0];
+    if (!originalFile) {
+        showNotification("Vui lòng chọn ảnh!", "error");
+        return;
     }
 
-    if (file.size > 8 * 1024 * 1024) {
-      showNotification("Ảnh quá lớn (>8MB). Vui lòng chọn ảnh nhỏ hơn!", "error");
-      return;
-    }
-
-    extractBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...`;
+    extractBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang nén & gửi...`;
     extractBtn.disabled = true;
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        body: formData,
-        // Các tùy chọn giúp tránh lỗi HTTP2 trên Render
-        mode: "cors",
-        cache: "no-cache",
-        redirect: "follow",
-        keepalive: false
-      });
+        // NÉN ẢNH TRƯỚC KHI GỬI
+        const compressedFile = await compressImage(originalFile);
+        
+        const formData = new FormData();
+        formData.append("file", compressedFile); // Gửi file đã nén
 
-      if (!response.ok) {
-        throw new Error(`Server trả về lỗi ${response.status}`);
-      }
+        const response = await fetch(API_URL, {
+            method: "POST",
+            body: formData,
+            mode: "cors",
+        });
 
-      const result = await response.json();
+        const result = await response.json();
+        // ... giữ nguyên phần xử lý kết quả bên dưới
 
       if (result.success) {
         fillData(result.data);

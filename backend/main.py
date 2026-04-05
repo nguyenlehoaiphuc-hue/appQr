@@ -195,7 +195,7 @@ async def extract_gpkd(file: UploadFile = File(...)):
         """
 
         response = client.models.generate_content(
-            model="gemini-2.0-flash-exp",
+            model="gemini-1.5-flash",
             contents=[prompt, types.Part.from_bytes(data=buffer.getvalue(), mime_type="image/jpeg")],
             config=types.GenerateContentConfig(
                 temperature=0.1,
