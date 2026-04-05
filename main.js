@@ -1,10 +1,10 @@
 // =============================
 // CONFIG
 // =============================
-const BASE_URL = window.location.hostname.includes("onrender.com") 
-    ? "http://appqr-sn45.onrender.com"     // ← Thử dùng http thay vì https
-    : "http://localhost:10000";
-
+// =============================
+// CONFIG - BASE URL (Khuyến nghị dùng)
+// =============================
+const BASE_URL = "https://appqr-sn45.onrender.com";   
 const API_URL = `${BASE_URL}/extract-gpkd`;
 const SUBMIT_URL = `${BASE_URL}/submit-form`;
 
