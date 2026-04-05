@@ -5,204 +5,218 @@
   <title>VietinBank eKYC - Đăng ký hộ kinh doanh</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  
   <style>
-    .notification {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 14px 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      z-index: 9999;
-      font-weight: 500;
-      max-width: 380px;
+    :root {
+      --vietin-navy: #0a3d62;
+      --vietin-navy-light: #1e5a8c;
+      --accent-red: #e30613;
     }
+    
+    .vietin-navy { color: var(--vietin-navy); }
+    .bg-vietin-navy { background-color: var(--vietin-navy); }
+    
+    .card {
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.08);
+    }
+
     input:focus {
       outline: none;
-      border-color: #1e40af;
-      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.2);
+      border-color: var(--vietin-navy);
+      box-shadow: 0 0 0 4px rgba(10, 61, 98, 0.15);
+    }
+
+    .preview-img {
+      max-height: 280px;
+      object-fit: contain;
+      border-radius: 12px;
+      border: 2px solid #e5e7eb;
+    }
+
+    .step-number {
+      background-color: #0a3d62;
+      color: white;
     }
   </style>
 </head>
 <body class="bg-gray-50 font-sans">
 
 <!-- HEADER -->
-<header class="bg-white border-b-4 border-red-600 shadow">
-  <div class="max-w-5xl mx-auto px-6 py-5">
-    <h1 class="text-2xl font-bold text-blue-950">
-      VietinBank - Đăng ký thông tin khách hàng hộ kinh doanh
-    </h1>
+<header class="bg-white shadow-md sticky top-0 z-50 border-b-4 border-[#0a3d62]">
+  <div class="max-w-5xl mx-auto px-6 py-5 flex items-center gap-4">
+    <i class="fa-solid fa-building-columns text-4xl text-[#0a3d62]"></i>
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">VietinBank</h1>
+      <p class="text-sm text-gray-500 -mt-1">Đăng ký hộ kinh doanh • eKYC Online</p>
+    </div>
   </div>
 </header>
 
-<div class="max-w-5xl mx-auto mt-8 px-6 pb-12">
+<div class="max-w-5xl mx-auto mt-8 px-6 pb-16">
 
   <!-- Phần 1: Tải hồ sơ -->
-  <div class="bg-white rounded-2xl shadow p-8 mb-10">
-    <h2 class="text-xl font-semibold text-blue-900 mb-6 flex items-center gap-2">
-      <span class="bg-blue-100 text-blue-700 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">1</span>
-      Tải lên hồ sơ
+  <div class="card bg-white rounded-3xl shadow-xl p-8 mb-10">
+    <h2 class="text-2xl font-semibold text-gray-900 mb-8 flex items-center gap-3">
+      <span class="step-number w-9 h-9 rounded-2xl flex items-center justify-center text-xl font-bold">1</span>
+      Tải lên tài liệu
     </h2>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">
-          CCCD mặt trước <span class="text-red-500">*</span>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">
+          CCCD mặt trước <span class="text-red-600">*</span>
         </label>
         <input type="file" id="cccd_front" accept="image/jpeg,image/png" 
-               class="w-full border border-gray-300 rounded-xl p-3 text-sm">
+               class="w-full border-2 border-gray-200 rounded-2xl p-4 text-sm">
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">
-          CCCD mặt sau <span class="text-red-500">*</span>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">
+          CCCD mặt sau <span class="text-red-600">*</span>
         </label>
         <input type="file" id="cccd_back" accept="image/jpeg,image/png" 
-               class="w-full border border-gray-300 rounded-xl p-3 text-sm">
+               class="w-full border-2 border-gray-200 rounded-2xl p-4 text-sm">
       </div>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">
-          Giấy phép hộ kinh doanh (GPKD) <span class="text-red-500">*</span>
+      <!-- GPKD với Preview -->
+      <div class="md:col-span-2">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">
+          Giấy phép kinh doanh (GPKD) <span class="text-red-600">*</span>
         </label>
-        <input type="file" id="gpkd" accept="image/jpeg,image/png,application/pdf" 
-               class="w-full border border-gray-300 rounded-xl p-3 text-sm">
-        <div id="previewContainer" class="mt-4"></div>
+        <input type="file" id="gpkd" accept="image/jpeg,image/png" 
+               class="w-full border-2 border-gray-200 rounded-2xl p-4 text-sm">
+        
+        <div id="previewContainer" class="mt-6 hidden bg-gray-50 p-4 rounded-2xl">
+          <p class="text-sm text-gray-500 mb-3 font-medium">Ảnh Giấy phép kinh doanh:</p>
+          <img id="gpkdPreview" class="preview-img mx-auto shadow-md" alt="Preview GPKD">
+        </div>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">
-          Ảnh thuê bao / Sim <span class="text-red-500">*</span>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">
+          Ảnh thuê bao / Sim <span class="text-red-600">*</span>
         </label>
         <input type="file" id="sim_image" accept="image/jpeg,image/png" 
-               class="w-full border border-gray-300 rounded-xl p-3 text-sm">
+               class="w-full border-2 border-gray-200 rounded-2xl p-4 text-sm">
       </div>
     </div>
 
     <button type="button" id="extractBtn"
-      class="mt-8 w-full bg-blue-900 hover:bg-blue-800 transition text-white font-semibold py-4 rounded-2xl text-lg">
-      Trích xuất thông tin từ giấy phép HKD
+      class="mt-12 w-full bg-[#0a3d62] hover:bg-[#1e5a8c] transition-all text-white font-semibold py-5 rounded-3xl text-lg shadow-lg flex items-center justify-center gap-3">
+      <i class="fa-solid fa-wand-magic-sparkles"></i>
+      Trích xuất thông tin từ GPKD
     </button>
   </div>
 
   <!-- Phần 2: Thông tin hộ kinh doanh -->
-  <div class="bg-white rounded-2xl shadow p-8 mb-10">
-    <h2 class="text-xl font-semibold text-blue-900 mb-6 flex items-center gap-2">
-      <span class="bg-blue-100 text-blue-700 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">2</span>
+  <div class="card bg-white rounded-3xl shadow-xl p-8 mb-10">
+    <h2 class="text-2xl font-semibold text-gray-900 mb-8 flex items-center gap-3">
+      <span class="step-number w-9 h-9 rounded-2xl flex items-center justify-center text-xl font-bold">2</span>
       Thông tin hộ kinh doanh
     </h2>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div class="md:col-span-2">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Tên hộ kinh doanh <span class="text-red-500">*</span></label>
-        <input type="text" id="business_name" 
-               class="w-full border border-gray-300 rounded-xl p-3" placeholder="Ví dụ: Hộ kinh doanh Nguyễn Văn A">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Tên hộ kinh doanh <span class="text-red-600">*</span></label>
+        <input type="text" id="business_name" class="w-full border-2 border-gray-200 rounded-2xl p-4" placeholder="Tên đầy đủ hộ kinh doanh">
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Mã số hộ kinh doanh <span class="text-red-500">*</span></label>
-        <input type="text" id="business_code" 
-               class="w-full border border-gray-300 rounded-xl p-3" placeholder="123456789">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Mã số hộ kinh doanh <span class="text-red-600">*</span></label>
+        <input type="text" id="business_code" class="w-full border-2 border-gray-200 rounded-2xl p-4" placeholder="1234567890">
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Ngày cấp <span class="text-red-500">*</span></label>
-        <input type="text" id="issued_date" 
-               class="w-full border border-gray-300 rounded-xl p-3">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Ngày cấp <span class="text-red-600">*</span></label>
+        <input type="text" id="issued_date" class="w-full border-2 border-gray-200 rounded-2xl p-4">
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Nơi cấp</label>
-        <input type="text" id="issued_place" 
-               class="w-full border border-gray-300 rounded-xl p-3" placeholder="UBND Quận/Huyện">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Nơi cấp</label>
+        <input type="text" id="issued_place" class="w-full border-2 border-gray-200 rounded-2xl p-4" placeholder="UBND Quận/Huyện">
       </div>
 
       <div class="md:col-span-2">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ trụ sở <span class="text-red-500">*</span></label>
-        <input type="text" id="business_address" 
-               class="w-full border border-gray-300 rounded-xl p-3" placeholder="Số nhà, đường, phường, quận, TP">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Địa chỉ trụ sở <span class="text-red-600">*</span></label>
+        <input type="text" id="business_address" class="w-full border-2 border-gray-200 rounded-2xl p-4" placeholder="Số nhà, đường, phường, quận, thành phố">
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại <span class="text-red-500">*</span></label>
-        <input type="tel" id="phone" 
-               class="w-full border border-gray-300 rounded-xl p-3" placeholder="0909123456">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Số điện thoại <span class="text-red-600">*</span></label>
+        <input type="tel" id="phone" class="w-full border-2 border-gray-200 rounded-2xl p-4" placeholder="0909 123 456">
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Email nhận hồ sơ</label>
-        <input type="email" id="email" 
-               class="w-full border border-gray-300 rounded-xl p-3" placeholder="example@email.com">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Email nhận hồ sơ</label>
+        <input type="email" id="email" class="w-full border-2 border-gray-200 rounded-2xl p-4" placeholder="example@email.com">
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Vốn điều lệ</label>
-        <input type="text" id="capital" 
-               class="w-full border border-gray-300 rounded-xl p-3" placeholder="500.000.000 VNĐ">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Vốn điều lệ</label>
+        <input type="text" id="capital" class="w-full border-2 border-gray-200 rounded-2xl p-4" placeholder="500.000.000 VNĐ">
       </div>
     </div>
   </div>
 
   <!-- Phần 3: Thông tin chủ hộ -->
-  <div class="bg-white rounded-2xl shadow p-8 mb-10">
-    <h2 class="text-xl font-semibold text-blue-900 mb-6 flex items-center gap-2">
-      <span class="bg-blue-100 text-blue-700 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">3</span>
+  <div class="card bg-white rounded-3xl shadow-xl p-8 mb-12">
+    <h2 class="text-2xl font-semibold text-gray-900 mb-8 flex items-center gap-3">
+      <span class="step-number w-9 h-9 rounded-2xl flex items-center justify-center text-xl font-bold">3</span>
       Thông tin chủ hộ kinh doanh
     </h2>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div class="md:col-span-2">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Họ và tên chủ hộ <span class="text-red-500">*</span></label>
-        <input type="text" id="owner_name" 
-               class="w-full border border-gray-300 rounded-xl p-3" placeholder="Nguyễn Văn A">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Họ và tên chủ hộ <span class="text-red-600">*</span></label>
+        <input type="text" id="owner_name" class="w-full border-2 border-gray-200 rounded-2xl p-4" placeholder="Nguyễn Văn A">
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Số CCCD / CMND <span class="text-red-500">*</span></label>
-        <input type="text" id="cccd" maxlength="12"
-               class="w-full border border-gray-300 rounded-xl p-3" placeholder="079123456789">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Số CCCD / CMND <span class="text-red-600">*</span></label>
+        <input type="text" id="cccd" maxlength="12" class="w-full border-2 border-gray-200 rounded-2xl p-4" placeholder="079123456789">
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Ngày cấp CCCD <span class="text-red-500">*</span></label>
-        <input type="text" id="cccd_issued_date" 
-               class="w-full border border-gray-300 rounded-xl p-3">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Ngày cấp CCCD <span class="text-red-600">*</span></label>
+        <input type="text" id="cccd_issued_date" class="w-full border-2 border-gray-200 rounded-2xl p-4">
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Nơi cấp CCCD</label>
-        <input type="text" id="cccd_issued_place" 
-               class="w-full border border-gray-300 rounded-xl p-3" placeholder="Cục Cảnh sát Quản lý Hộ khẩu">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Nơi cấp CCCD</label>
+        <input type="text" id="cccd_issued_place" class="w-full border-2 border-gray-200 rounded-2xl p-4" placeholder="Cục Cảnh sát Quản lý Hộ khẩu">
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Ngày sinh <span class="text-red-500">*</span></label>
-        <input type="text" id="dob" 
-               class="w-full border border-gray-300 rounded-xl p-3">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Ngày sinh <span class="text-red-600">*</span></label>
+        <input type="text" id="dob" class="w-full border-2 border-gray-200 rounded-2xl p-4" placeholder="DD/MM/YYYY">
       </div>
 
       <div class="md:col-span-2">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ thường trú <span class="text-red-500">*</span></label>
-        <input type="text" id="permanent_address" 
-               class="w-full border border-gray-300 rounded-xl p-3" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Địa chỉ thường trú <span class="text-red-600">*</span></label>
+        <input type="text" id="permanent_address" class="w-full border-2 border-gray-200 rounded-2xl p-4" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố">
       </div>
     </div>
   </div>
 
-  <!-- Nút xác nhận -->
+  <!-- Nút Gửi -->
   <button type="button" id="submitBtn"
-    class="w-full bg-red-600 hover:bg-red-700 transition text-white font-semibold py-4 rounded-2xl text-lg shadow-md">
+    class="w-full bg-[#0a3d62] hover:bg-[#1e5a8c] transition-all text-white font-semibold py-5 rounded-3xl text-xl shadow-xl flex items-center justify-center gap-3">
+    <i class="fa-solid fa-paper-plane"></i>
     Xác nhận thông tin & Gửi hồ sơ
   </button>
 
 </div>
 
-<footer class="text-center text-gray-500 text-sm py-6">
-  © 2026 VietinBank - Hệ thống số hóa hồ sơ hộ kinh doanh
+<footer class="text-center text-gray-500 text-sm py-10">
+  © 2026 VietinBank - Hệ thống số hóa đăng ký hộ kinh doanh
 </footer>
 
 <!-- JS -->
 <script src="main.js"></script>
-<script src="nhap.js"></script>
 </body>
 </html>

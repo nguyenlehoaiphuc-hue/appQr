@@ -1,7 +1,7 @@
 // =============================
 // CONFIG
 // =============================
-const BASE_URL = "https://appqr-sn45.onrender.com";
+const BASE_URL = "https://appqr-sn45.onrender.com";   // ← Đổi nếu domain Render thay đổi
 const API_URL = `${BASE_URL}/extract-gpkd`;
 const SUBMIT_URL = `${BASE_URL}/submit-form`;
 
@@ -14,7 +14,7 @@ function showNotification(message, type = "success") {
   toast.className = `fixed top-5 right-5 ${color} text-white px-6 py-4 rounded-xl shadow-2xl z-[100]`;
   toast.innerText = message;
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 4000);
+  setTimeout(() => toast.remove(), 5000);
 }
 
 // =============================
@@ -26,55 +26,81 @@ function fillData(data) {
     if (el) {
       el.value = data[key] || "";
       el.classList.add('bg-blue-50');
-      setTimeout(() => el.classList.remove('bg-blue-50'), 2000);
+      setTimeout(() => el.classList.remove('bg-blue-50'), 2500);
     }
   });
 }
 
 // =============================
-// EXTRACT GPKD (AI)
+// EXTRACT GPKD - TỐI ƯU CHO ĐIỆN THOẠI
 // =============================
 document.addEventListener("DOMContentLoaded", () => {
   const extractBtn = document.getElementById("extractBtn");
   const fileInput = document.getElementById("gpkd");
 
-  if (!extractBtn) return;
+  if (!extractBtn || !fileInput) {
+    console.warn("Không tìm thấy nút extractBtn hoặc input gpkd");
+    return;
+  }
 
   extractBtn.addEventListener("click", async (e) => {
     e.preventDefault();
 
     const file = fileInput.files[0];
     if (!file) {
-      showNotification("Chọn ảnh GPKD trước!", "error");
+      showNotification("Vui lòng chọn ảnh Giấy phép kinh doanh!", "error");
       return;
     }
 
-    extractBtn.innerHTML = "⏳ Đang xử lý...";
+    // Giới hạn kích thước file
+    if (file.size > 8 * 1024 * 1024) {
+      showNotification("Ảnh quá lớn (>8MB). Vui lòng chụp lại hoặc nén ảnh!", "error");
+      return;
+    }
+
+    extractBtn.innerHTML = "⏳ Đang xử lý ảnh... (10-30 giây)";
     extractBtn.disabled = true;
 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      const res = await fetch(API_URL, {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 70000); // 70 giây
+
+      const response = await fetch(API_URL, {
         method: "POST",
-        body: formData
+        body: formData,
+        signal: controller.signal
       });
 
-      const result = await res.json();
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
 
       if (result.success) {
         fillData(result.data);
-        showNotification("Trích xuất thành công!");
+        showNotification("✅ Trích xuất thông tin thành công!", "success");
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || "Không thể trích xuất dữ liệu");
       }
 
-    } catch (err) {
-      console.error(err);
-      showNotification("Lỗi AI hoặc server!", "error");
+    } catch (error) {
+      console.error("Extract GPKD error:", error);
+
+      if (error.name === "AbortError") {
+        showNotification("⏰ Thời gian xử lý quá lâu. Vui lòng thử lại!", "error");
+      } else if (error.message.includes("Failed to fetch") || error.message.includes("ERR_HTTP2")) {
+        showNotification("❌ Không kết nối được với server. Kiểm tra mạng di động!", "error");
+      } else {
+        showNotification("❌ Lỗi: " + error.message, "error");
+      }
     } finally {
-      extractBtn.innerHTML = "Trích xuất";
+      extractBtn.innerHTML = "Trích xuất thông tin GPKD";
       extractBtn.disabled = false;
     }
   });
@@ -85,80 +111,61 @@ document.addEventListener("DOMContentLoaded", () => {
 // =============================
 async function submitProfile() {
   const submitBtn = document.getElementById("submitBtn");
+  if (!submitBtn) return;
 
-  // Thu thập dữ liệu
   const payload = {
-    business_name: document.getElementById('business_name').value,
-    business_code: document.getElementById('business_code').value,
-    issued_date: document.getElementById('issued_date').value,
-    issued_place: document.getElementById('issued_place').value,
-    business_address: document.getElementById('business_address').value,
-    phone: document.getElementById('phone').value,
-    email: document.getElementById('email').value,
-    capital: document.getElementById('capital').value
+    business_name: document.getElementById('business_name')?.value || "",
+    business_code: document.getElementById('business_code')?.value || "",
+    issued_date: document.getElementById('issued_date')?.value || "",
+    issued_place: document.getElementById('issued_place')?.value || "",
+    business_address: document.getElementById('business_address')?.value || "",
+    phone: document.getElementById('phone')?.value || "",
+    email: document.getElementById('email')?.value || "",
+    capital: document.getElementById('capital')?.value || ""
   };
 
   if (!payload.business_name || !payload.email) {
-    showNotification("Thiếu thông tin!", "error");
+    showNotification("Vui lòng nhập tên doanh nghiệp và email!", "error");
     return;
   }
 
-  submitBtn.innerHTML = "⏳ Đang gửi...";
+  submitBtn.innerHTML = "⏳ Đang gửi hồ sơ...";
   submitBtn.disabled = true;
 
   try {
-    // 🔥 FIX QUAN TRỌNG: dùng FormData
     const formData = new FormData();
-
-    // payload
     formData.append("payload", JSON.stringify(payload));
 
-    // 🔥 lấy từng input riêng
-    const gpkd = document.getElementById("gpkd");
-    const cccd_truoc = document.getElementById("cccd_front");
-    const cccd_sau = document.getElementById("cccd_back");
-    const sim = document.getElementById("sim_image");
-
-    // 🔥 append từng cái nếu có
-    if (gpkd && gpkd.files.length > 0) {
-    formData.append("files", gpkd.files[0]);
-    }
-
-    if (cccd_truoc && cccd_truoc.files.length > 0) {
-    formData.append("files", cccd_truoc.files[0]);
-    }
-
-    if (cccd_sau && cccd_sau.files.length > 0) {
-    formData.append("files", cccd_sau.files[0]);
-    }
-
-    if (sim && sim.files.length > 0) {
-    formData.append("files", sim.files[0]);
-    }
-
-    const res = await fetch(SUBMIT_URL, {
-      method: "POST",
-      body: formData   // ❌ KHÔNG set Content-Type
+    // Append files
+    const fileInputs = ["gpkd", "cccd_front", "cccd_back", "sim_image"];
+    fileInputs.forEach(id => {
+      const input = document.getElementById(id);
+      if (input && input.files.length > 0) {
+        formData.append("files", input.files[0]);
+      }
     });
 
-    const result = await res.json();
+    const response = await fetch(SUBMIT_URL, {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await response.json();
 
     if (result.success) {
-      showNotification("✅ Gửi thành công!");
+      showNotification("✅ Gửi hồ sơ thành công!", "success");
     } else {
-      showNotification("❌ " + result.message, "error");
+      showNotification("❌ " + (result.message || "Gửi thất bại"), "error");
     }
 
   } catch (err) {
     console.error(err);
-    showNotification("❌ Không kết nối server!", "error");
+    showNotification("❌ Không kết nối được với server. Kiểm tra mạng!", "error");
   } finally {
     submitBtn.innerHTML = "Gửi hồ sơ";
     submitBtn.disabled = false;
   }
 }
 
-// =============================
-// BIND BUTTON
-// =============================
+// Bind submit button
 document.getElementById("submitBtn")?.addEventListener("click", submitProfile);
