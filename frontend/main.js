@@ -1,8 +1,9 @@
 // =============================
 // CONFIG
 // =============================
-const API_URL = "http://127.0.0.1:8000/extract-gpkd";
-const SUBMIT_URL = "http://127.0.0.1:8000/submit-form";
+const BASE_URL = "https://appqr-sn45.onrender.com";
+const API_URL = `${BASE_URL}/generate-qr`;
+const SUBMIT_URL = `${BASE_URL}/submit-form`;
 
 // =============================
 // NOTIFICATION
