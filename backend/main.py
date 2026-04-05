@@ -22,31 +22,25 @@ from google import genai
 from google.genai import types
 
 # =============================
-# LIFESPAN - Khởi tạo model 1 lần
+# LIFESPAN - Khởi tạo chỉ 1 lần
 # =============================
 client = None
-model = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global client, model
-    print("🔄 Đang khởi tạo Google GenAI Client và Model... (chỉ chạy 1 lần)")
+    global client
+    print("🔄 Đang khởi tạo Google GenAI Client...")
 
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         print("⚠️  GEMINI_API_KEY chưa được thiết lập!")
     else:
         client = genai.Client(api_key=api_key)
-        model = client.models.get("gemini-3.1-flash-lite-preview")   # Model nhanh + rẻ hiện tại
+        print("✅ Google GenAI Client đã sẵn sàng! (Sử dụng gemini-3.1-flash-lite-preview)")
 
-    print("✅ Google GenAI Model đã sẵn sàng!")
     yield
     print("🛑 Application shutting down...")
 
-
-# =============================
-# FASTAPI APP
-# =============================
 app = FastAPI(title="VietinBank eKYC Online", version="2.0", lifespan=lifespan)
 
 app.add_middleware(
@@ -166,14 +160,13 @@ async def root():
 # =============================
 @app.post("/extract-gpkd")
 async def extract_gpkd(file: UploadFile = File(...)):
-    if model is None:
-        return {"success": False, "error": "Model Gemini chưa được khởi tạo. Vui lòng kiểm tra GEMINI_API_KEY."}
+    if client is None:
+        return {"success": False, "error": "Gemini Client chưa được khởi tạo. Kiểm tra GEMINI_API_KEY."}
 
     try:
-        # Đọc và tối ưu ảnh mạnh hơn
         image_data = await file.read()
         image = Image.open(io.BytesIO(image_data))
-        image.thumbnail((1024, 1024))   # Giảm kích thước để nhanh hơn
+        image.thumbnail((1024, 1024))
 
         buffer = io.BytesIO()
         image.save(buffer, format="JPEG", quality=75)
@@ -199,10 +192,15 @@ async def extract_gpkd(file: UploadFile = File(...)):
         }
         """
 
-        # Gọi model mới (google-genai)
         response = client.models.generate_content(
-            model=model,
-            contents=[prompt, types.Part.from_bytes(data=buffer.getvalue(), mime_type="image/jpeg")],
+            model="gemini-3.1-flash-lite-preview",           # ← Sửa ở đây
+            contents=[
+                prompt,
+                types.Part.from_bytes(
+                    data=buffer.getvalue(),
+                    mime_type="image/jpeg"
+                )
+            ],
             config=types.GenerateContentConfig(
                 temperature=0.1,
                 max_output_tokens=1200,
@@ -219,6 +217,7 @@ async def extract_gpkd(file: UploadFile = File(...)):
         return {"success": True, "data": data}
 
     except Exception as e:
+        print("Lỗi extract-gpkd:", str(e))
         return {"success": False, "error": str(e)}
 
 # =============================
